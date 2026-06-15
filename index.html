@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ふりがな付与ツール | wataryuu.com</title>
+    <meta
+      name="description"
+      content="日本語テキストを解析し、HTML5 ruby タグ形式のふりがな付き HTML をブラウザ内で生成するツールです。"
+    />
+    <meta name="theme-color" content="#f7f4ee" />
+    <link rel="canonical" href="https://wataryuu.com/furigana/" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f7f4ee;
+        --surface: #ffffff;
+        --surface-soft: #f1ede5;
+        --line: #ddd6ca;
+        --line-strong: #cfc7ba;
+        --text: #1f1d1a;
+        --muted: #676156;
+        --accent: #2e5aac;
+        --accent-soft: #eef4ff;
+        --shadow: 0 14px 34px rgba(34, 29, 22, 0.06);
+        --radius-lg: 24px;
+        --radius-md: 18px;
+        --content-width: min(980px, calc(100vw - 32px));
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family: "IBM Plex Sans JP", sans-serif;
+        background:
+          radial-gradient(circle at top right, rgba(46, 90, 172, 0.07), transparent 24%),
+          linear-gradient(180deg, #fbfaf7 0%, var(--bg) 100%);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      a:focus-visible,
+      button:focus-visible,
+      input:focus-visible,
+      textarea:focus-visible {
+        outline: 3px solid rgba(46, 90, 172, 0.26);
+        outline-offset: 3px;
+      }
+
+      .page {
+        width: var(--content-width);
+        margin: 0 auto;
+        padding: 26px 0 56px;
+      }
+
+      .site-header {
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .title-wrap {
+        display: grid;
+        gap: 10px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        width: fit-content;
+        padding: 6px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: clamp(2rem, 5vw, 3.8rem);
+        line-height: 1.08;
+        letter-spacing: -0.03em;
+      }
+
+      .lead {
+        color: var(--muted);
+        font-size: 1rem;
+        line-height: 1.9;
+      }
+
+      main {
+        display: grid;
+        gap: 22px;
+        padding-top: 28px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        background: rgba(255, 255, 255, 0.88);
+        box-shadow: var(--shadow);
+      }
+
+      .panel-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        padding: 20px 22px 0;
+      }
+
+      .panel-title {
+        font-size: 1.16rem;
+        line-height: 1.35;
+      }
+
+      .panel-body {
+        display: grid;
+        gap: 14px;
+        padding: 18px 22px 22px;
+      }
+
+      textarea,
+      input[type="text"] {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fff;
+        color: var(--text);
+        transition:
+          border-color 160ms ease,
+          box-shadow 160ms ease;
+      }
+
+      textarea {
+        padding: 16px;
+        line-height: 1.8;
+      }
+
+      #sourceText,
+      #outputHtml {
+        min-height: 62px;
+        resize: none;
+        overflow-y: hidden;
+      }
+
+      #sourceText::placeholder,
+      #outputHtml::placeholder {
+        color: var(--muted);
+        opacity: 1;
+      }
+
+      .preview.is-sample,
+      #outputHtml.is-sample {
+        color: var(--muted);
+      }
+
+      textarea:focus,
+      input[type="text"]:focus {
+        border-color: rgba(46, 90, 172, 0.55);
+        box-shadow: 0 0 0 4px rgba(46, 90, 172, 0.1);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 0 18px;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        font-weight: 700;
+        transition:
+          background 170ms ease,
+          border-color 170ms ease,
+          color 170ms ease,
+          transform 170ms ease;
+      }
+
+      .button:hover:not(:disabled) {
+        transform: translateY(-1px);
+      }
+
+      .button-primary {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .button-secondary {
+        border-color: var(--line);
+        background: #faf8f4;
+        color: var(--text);
+      }
+
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 42px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .status::before {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--accent);
+        content: "";
+      }
+
+      .status-error {
+        color: #8c2f25;
+      }
+
+      .status-error::before {
+        background: #b63c2f;
+      }
+
+      .token-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .empty {
+        padding: 18px;
+        border: 1px dashed var(--line-strong);
+        border-radius: var(--radius-md);
+        background: #faf8f4;
+        color: var(--muted);
+        line-height: 1.8;
+      }
+
+      .token-row {
+        display: grid;
+        grid-template-columns: minmax(120px, 1fr) minmax(170px, 0.9fr) auto;
+        gap: 12px;
+        align-items: center;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: #fff;
+      }
+
+      .token-surface {
+        display: flex;
+        min-height: 42px;
+        align-items: center;
+        padding: 9px 11px;
+        border-radius: 12px;
+        background: var(--surface-soft);
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+
+      .reading-field {
+        display: grid;
+        gap: 5px;
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .reading-field input {
+        min-height: 42px;
+        padding: 0 12px;
+      }
+
+      .muted-label {
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .toggle {
+        min-width: 88px;
+        min-height: 42px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #faf8f4;
+        color: var(--muted);
+        font-weight: 700;
+        transition:
+          background 170ms ease,
+          border-color 170ms ease,
+          color 170ms ease,
+          transform 170ms ease;
+      }
+
+      .toggle:hover:not(:disabled) {
+        transform: translateY(-1px);
+        border-color: var(--line-strong);
+      }
+
+      .toggle[aria-pressed="true"] {
+        border-color: rgba(46, 90, 172, 0.35);
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+
+      .segment {
+        display: inline-flex;
+        width: fit-content;
+        max-width: 100%;
+        padding: 4px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface);
+      }
+
+      .segment button {
+        min-height: 40px;
+        padding: 0 15px;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--muted);
+        font-weight: 700;
+        transition:
+          background 160ms ease,
+          color 160ms ease;
+      }
+
+      .segment button[aria-pressed="true"] {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .preview {
+        min-height: 62px;
+        padding: 20px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: #fff;
+        font-size: clamp(1.18rem, 2.6vw, 1.55rem);
+        line-height: 2.1;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
+      rt {
+        color: var(--accent);
+        font-size: 0.52em;
+        font-weight: 600;
+      }
+
+      .output-row {
+        display: grid;
+        gap: 12px;
+      }
+
+      .output-row textarea {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.92rem;
+      }
+
+      .toast {
+        position: fixed;
+        right: 22px;
+        bottom: 22px;
+        z-index: 10;
+        padding: 12px 16px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--text);
+        color: #fff;
+        box-shadow: 0 16px 36px rgba(34, 29, 22, 0.18);
+        opacity: 0;
+        transform: translateY(10px);
+        transition:
+          opacity 180ms ease,
+          transform 180ms ease;
+        pointer-events: none;
+      }
+
+      .toast.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px 16px;
+        padding-top: 28px;
+        margin-top: 28px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .footer a {
+        color: var(--text);
+      }
+
+      @media (max-width: 760px) {
+        .site-header,
+        .panel-head,
+        .footer {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .token-row {
+          grid-template-columns: 1fr;
+        }
+
+        .segment {
+          display: grid;
+          width: 100%;
+          border-radius: 18px;
+        }
+
+        .segment button {
+          border-radius: 14px;
+        }
+      }
+
+      @media (max-width: 520px) {
+        .page {
+          width: min(100vw - 20px, 980px);
+          padding-top: 18px;
+        }
+
+        .panel-head,
+        .panel-body {
+          padding-left: 16px;
+          padding-right: 16px;
+        }
+
+        .actions,
+        .button {
+          width: 100%;
+        }
+
+        .toast {
+          right: 10px;
+          bottom: 10px;
+          left: 10px;
+          text-align: center;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="site-header">
+        <div class="title-wrap">
+          <span class="eyebrow">Text Tool</span>
+          <h1>ふりがな付与ツール</h1>
+          <p class="lead">
+            入力した日本語テキストを形態素解析し、HTML5 ruby タグの文字列を生成します。読みやルビの有無はトークンごとに調整できます。
+          </p>
+        </div>
+      </header>
+
+      <main>
+        <section class="panel" aria-labelledby="range-title">
+          <div class="panel-head">
+            <h2 class="panel-title" id="range-title">ルビ範囲</h2>
+          </div>
+          <div class="panel-body">
+            <div class="segment" role="group" aria-label="ルビ範囲">
+              <button type="button" id="splitModeButton" aria-pressed="true">送り仮名を分ける</button>
+              <button type="button" id="wholeModeButton" aria-pressed="false">語まるごとルビ</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="input-title">
+          <div class="panel-head">
+            <h2 class="panel-title" id="input-title">入力</h2>
+            <div class="status" id="status">辞書を読み込んでいます</div>
+          </div>
+          <div class="panel-body">
+            <textarea id="sourceText" placeholder="例: 今日は新しい本を読みました。"></textarea>
+            <div class="actions">
+              <button class="button button-primary" id="convertButton" type="button" disabled>変換</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="preview-title">
+          <div class="panel-head">
+            <h2 class="panel-title" id="preview-title">プレビュー</h2>
+          </div>
+          <div class="panel-body">
+            <div class="preview is-sample" id="preview" aria-live="polite">例: <ruby>今日<rt>きょう</rt></ruby>は<ruby>新<rt>あたら</rt></ruby>しい<ruby>本<rt>ほん</rt></ruby>を<ruby>読<rt>よ</rt></ruby>みました。</div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="output-title">
+          <div class="panel-head">
+            <h2 class="panel-title" id="output-title">出力</h2>
+          </div>
+          <div class="panel-body output-row">
+            <textarea class="is-sample" id="outputHtml" readonly aria-label="生成HTML">例: <ruby>今日<rt>きょう</rt></ruby>は<ruby>新<rt>あたら</rt></ruby>しい<ruby>本<rt>ほん</rt></ruby>を<ruby>読<rt>よ</rt></ruby>みました。</textarea>
+            <div class="actions">
+              <button class="button button-secondary" id="copyButton" type="button">コピー</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="editor-title">
+          <div class="panel-head">
+            <h2 class="panel-title" id="editor-title">編集</h2>
+          </div>
+          <div class="panel-body">
+            <div class="token-list" id="tokenList">
+              <p class="empty">入力して「変換」を押すと、ここに編集項目が表示されます。</p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span>HTML5 ruby タグ形式のふりがなを生成します。</span>
+        <span><a href="../privacy/">プライバシーポリシー</a></span>
+      </footer>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
+    <script>
+      const state = {
+        tokenizer: null,
+        tokens: [],
+        splitOkurigana: true
+      };
+
+      const elements = {
+        sourceText: document.getElementById("sourceText"),
+        convertButton: document.getElementById("convertButton"),
+        status: document.getElementById("status"),
+        tokenList: document.getElementById("tokenList"),
+        splitModeButton: document.getElementById("splitModeButton"),
+        wholeModeButton: document.getElementById("wholeModeButton"),
+        preview: document.getElementById("preview"),
+        outputHtml: document.getElementById("outputHtml"),
+        copyButton: document.getElementById("copyButton"),
+        toast: document.getElementById("toast")
+      };
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function katakanaToHiragana(value) {
+        return String(value || "").replace(/[\u30a1-\u30f6]/g, (char) =>
+          String.fromCharCode(char.charCodeAt(0) - 0x60)
+        );
+      }
+
+      function normalizeReading(reading) {
+        if (!reading || reading === "*") {
+          return "";
+        }
+        return katakanaToHiragana(reading);
+      }
+
+      function isKanji(char) {
+        return /[\u3400-\u9fff々〆]/.test(char);
+      }
+
+      function hasKanji(value) {
+        return Array.from(value).some(isKanji);
+      }
+
+      function isKana(char) {
+        return /[\u3041-\u3096\u309d\u309e\u30a1-\u30fa\u30fc\u30fd\u30fe]/.test(char);
+      }
+
+      function normalizeKana(value) {
+        return katakanaToHiragana(value);
+      }
+
+      function splitSurfaceRuns(surface) {
+        const chars = Array.from(surface);
+        const runs = [];
+
+        chars.forEach((char) => {
+          const kind = isKanji(char) ? "kanji" : isKana(char) ? "kana" : "other";
+          const lastRun = runs[runs.length - 1];
+
+          if (lastRun && lastRun.kind === kind) {
+            lastRun.text += char;
+          } else {
+            runs.push({ kind, text: char });
+          }
+        });
+
+        return runs;
+      }
+
+      function buildSplitRuby(surface, reading) {
+        const runs = splitSurfaceRuns(surface);
+        const kanjiRunIndexes = runs
+          .map((run, index) => (run.kind === "kanji" ? index : -1))
+          .filter((index) => index >= 0);
+        const kanaMatches = [];
+        let cursor = 0;
+
+        for (let index = 1; index < kanjiRunIndexes.length; index += 1) {
+          const previousKanji = kanjiRunIndexes[index - 1];
+          const currentKanji = kanjiRunIndexes[index];
+          const hasKanaBoundary = runs
+            .slice(previousKanji + 1, currentKanji)
+            .some((run) => run.kind === "kana");
+
+          if (!hasKanaBoundary) {
+            return null;
+          }
+        }
+
+        for (let index = 0; index < runs.length; index += 1) {
+          const run = runs[index];
+          if (run.kind !== "kana") {
+            continue;
+          }
+
+          const normalized = normalizeKana(run.text);
+          const foundAt = reading.indexOf(normalized, cursor);
+
+          if (foundAt < 0) {
+            return null;
+          }
+
+          kanaMatches[index] = {
+            start: foundAt,
+            end: foundAt + normalized.length
+          };
+          cursor = foundAt + normalized.length;
+        }
+
+        const htmlParts = [];
+
+        for (let index = 0; index < runs.length; index += 1) {
+          const run = runs[index];
+
+          if (run.kind === "kanji") {
+            let previousEnd = 0;
+            let nextStart = reading.length;
+
+            for (let before = index - 1; before >= 0; before -= 1) {
+              if (kanaMatches[before]) {
+                previousEnd = kanaMatches[before].end;
+                break;
+              }
+            }
+
+            for (let after = index + 1; after < runs.length; after += 1) {
+              if (kanaMatches[after]) {
+                nextStart = kanaMatches[after].start;
+                break;
+              }
+            }
+
+            const rt = reading.slice(previousEnd, nextStart);
+            if (!rt) {
+              return null;
+            }
+            htmlParts.push(`<ruby>${escapeHtml(run.text)}<rt>${escapeHtml(rt)}</rt></ruby>`);
+          } else {
+            htmlParts.push(escapeHtml(run.text));
+          }
+        }
+
+        return htmlParts.join("");
+      }
+
+      function tokenToHtml(token) {
+        if (!token.hasKanji || !token.rubyEnabled || !token.reading) {
+          return escapeHtml(token.surface);
+        }
+
+        if (!state.splitOkurigana) {
+          return `<ruby>${escapeHtml(token.surface)}<rt>${escapeHtml(token.reading)}</rt></ruby>`;
+        }
+
+        return buildSplitRuby(token.surface, token.reading) ||
+          `<ruby>${escapeHtml(token.surface)}<rt>${escapeHtml(token.reading)}</rt></ruby>`;
+      }
+
+      function updateOutput() {
+        const html = state.tokens.map(tokenToHtml).join("");
+        elements.preview.classList.remove("is-sample");
+        elements.outputHtml.classList.remove("is-sample");
+        elements.preview.innerHTML = html;
+        elements.outputHtml.value = html;
+        resizeTextarea(elements.outputHtml);
+      }
+
+      function createToken(sourceToken, id) {
+        const surface = sourceToken.surface_form || "";
+        const tokenHasKanji = hasKanji(surface);
+
+        return {
+          id,
+          surface,
+          hasKanji: tokenHasKanji,
+          reading: tokenHasKanji ? normalizeReading(sourceToken.reading) : "",
+          rubyEnabled: tokenHasKanji
+        };
+      }
+
+      function tokenizePreservingWhitespace(text) {
+        const pieces = text.split(/(\s+)/u);
+        const tokens = [];
+        let id = 0;
+
+        pieces.forEach((piece) => {
+          if (!piece) {
+            return;
+          }
+
+          if (/^\s+$/u.test(piece)) {
+            tokens.push({
+              id,
+              surface: piece,
+              hasKanji: false,
+              reading: "",
+              rubyEnabled: false
+            });
+            id += 1;
+            return;
+          }
+
+          state.tokenizer.tokenize(piece).forEach((token) => {
+            tokens.push(createToken(token, id));
+            id += 1;
+          });
+        });
+
+        return tokens;
+      }
+
+      function renderEditor() {
+        if (!state.tokens.length) {
+          elements.tokenList.innerHTML = '<p class="empty">入力して「変換」を押すと、ここに編集項目が表示されます。</p>';
+          return;
+        }
+
+        elements.tokenList.innerHTML = state.tokens
+          .map((token) => {
+            const readingControl = token.hasKanji
+              ? `<label class="reading-field">読み<input type="text" data-reading-id="${token.id}" value="${escapeHtml(token.reading)}" placeholder="ひらがなで入力" /></label>`
+              : '<span class="muted-label">ルビ対象外</span>';
+            const disabled = token.hasKanji ? "" : " disabled";
+
+            return `
+              <div class="token-row">
+                <span class="token-surface">${escapeHtml(token.surface)}</span>
+                ${readingControl}
+                <button class="toggle" type="button" data-toggle-id="${token.id}" aria-pressed="${token.rubyEnabled ? "true" : "false"}"${disabled}>
+                  ${token.rubyEnabled ? "ON" : "OFF"}
+                </button>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      function convertText() {
+        if (!state.tokenizer) {
+          showStatus("辞書の読み込みが完了していません", true);
+          return;
+        }
+
+        resizeTextarea(elements.sourceText);
+        state.tokens = tokenizePreservingWhitespace(elements.sourceText.value);
+        renderEditor();
+        updateOutput();
+      }
+
+      function setRangeMode(splitOkurigana) {
+        state.splitOkurigana = splitOkurigana;
+        elements.splitModeButton.setAttribute("aria-pressed", String(splitOkurigana));
+        elements.wholeModeButton.setAttribute("aria-pressed", String(!splitOkurigana));
+        updateOutput();
+      }
+
+      function showStatus(message, isError = false) {
+        elements.status.textContent = message;
+        elements.status.classList.toggle("status-error", isError);
+      }
+
+      let toastTimer = 0;
+
+      function showToast(message) {
+        window.clearTimeout(toastTimer);
+        elements.toast.textContent = message;
+        elements.toast.classList.add("is-visible");
+        toastTimer = window.setTimeout(() => {
+          elements.toast.classList.remove("is-visible");
+        }, 1800);
+      }
+
+      function resizeTextarea(el) {
+        el.style.height = "auto";
+        el.style.height = `${el.scrollHeight}px`;
+      }
+
+      function resizeAutoGrowTextareas() {
+        resizeTextarea(elements.sourceText);
+        resizeTextarea(elements.outputHtml);
+      }
+
+      elements.sourceText.addEventListener("input", () => resizeTextarea(elements.sourceText));
+      elements.convertButton.addEventListener("click", convertText);
+
+      elements.tokenList.addEventListener("input", (event) => {
+        const id = Number(event.target.dataset.readingId);
+        const token = state.tokens.find((item) => item.id === id);
+
+        if (token) {
+          token.reading = katakanaToHiragana(event.target.value.trim());
+          updateOutput();
+        }
+      });
+
+      elements.tokenList.addEventListener("click", (event) => {
+        const toggle = event.target.closest("[data-toggle-id]");
+        if (!toggle) {
+          return;
+        }
+
+        const id = Number(toggle.dataset.toggleId);
+        const token = state.tokens.find((item) => item.id === id);
+
+        if (token && token.hasKanji) {
+          token.rubyEnabled = !token.rubyEnabled;
+          renderEditor();
+          updateOutput();
+        }
+      });
+
+      elements.splitModeButton.addEventListener("click", () => setRangeMode(true));
+      elements.wholeModeButton.addEventListener("click", () => setRangeMode(false));
+
+      elements.copyButton.addEventListener("click", async () => {
+        if (elements.outputHtml.classList.contains("is-sample")) {
+          showToast("変換してから利用してください");
+          return;
+        }
+
+        try {
+          await navigator.clipboard.writeText(elements.outputHtml.value);
+          showToast("コピーしました");
+        } catch (error) {
+          showToast("コピーできませんでした");
+        }
+      });
+
+      function loadDictionary() {
+        if (!window.kuromoji) {
+          showStatus("kuromoji を読み込めませんでした", true);
+          return;
+        }
+
+        window.kuromoji
+          .builder({ dicPath: "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/" })
+          .build((error, tokenizer) => {
+            if (error) {
+              showStatus("辞書の読み込みに失敗しました", true);
+              return;
+            }
+
+            state.tokenizer = tokenizer;
+            elements.convertButton.disabled = false;
+            showStatus("辞書の読み込みが完了しました");
+          });
+      }
+
+      // レイアウト確定後に初期高さを計算する(確定前だと幅0で誤った高さになるため)
+      requestAnimationFrame(() => requestAnimationFrame(resizeAutoGrowTextareas));
+      window.addEventListener("load", resizeAutoGrowTextareas);
+      window.addEventListener("resize", resizeAutoGrowTextareas);
+      loadDictionary();
+    </script>
+  </body>
+</html>
