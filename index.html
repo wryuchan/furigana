@@ -6,7 +6,7 @@
     <title>ふりがな付与ツール | wataryuu.com</title>
     <meta
       name="description"
-      content="日本語テキストを解析し、HTML5 ruby タグ形式のふりがな付き HTML をブラウザ内で生成するツールです。"
+      content="日本語テキストを解析し、HTML5 ruby・note（青空文庫記法）・pixiv 形式のふりがな（ルビ）付きテキストをブラウザ内で生成するツールです。"
     />
     <meta name="theme-color" content="#f7f4ee" />
     <link rel="canonical" href="https://wataryuu.com/furigana/" />
@@ -541,7 +541,7 @@
           <span class="eyebrow">Text Tool</span>
           <h1>ふりがな付与ツール</h1>
           <p class="lead">
-            入力した日本語テキストを形態素解析し、HTML5 ruby タグの文字列を生成します。読みやルビの有無はトークンごとに調整できます。
+            日本語テキストを形態素解析してふりがな（ルビ）付きの文字列を生成します。HTML5 ruby・note（青空文庫記法）・pixiv の3形式に対応し、モノルビ／グループルビ／語まるごとの切り替えや読みをトークンごとに調整できます。
           </p>
         </div>
       </header>
@@ -566,7 +566,7 @@
             <div class="status" id="status">辞書を読み込んでいます</div>
           </div>
           <div class="panel-body">
-            <textarea id="sourceText" placeholder="例: 新幹線で旅行を楽しむ。"></textarea>
+            <textarea id="sourceText" placeholder="例: 美術館で絵を楽しむ。"></textarea>
             <div class="actions">
               <button class="button button-primary" id="convertButton" type="button" disabled>変換</button>
             </div>
@@ -578,7 +578,7 @@
             <h2 class="panel-title" id="preview-title">プレビュー</h2>
           </div>
           <div class="panel-body">
-            <div class="preview is-sample" id="preview" aria-live="polite">例: <ruby>新幹線<rt>しんかんせん</rt></ruby>で<ruby>旅行<rt>りょこう</rt></ruby>を<ruby>楽<rt>たの</rt></ruby>しむ。</div>
+            <div class="preview is-sample" id="preview" aria-live="polite">例: <ruby>美術館<rt>びじゅつかん</rt></ruby>で<ruby>絵<rt>え</rt></ruby>を<ruby>楽<rt>たの</rt></ruby>しむ。</div>
           </div>
         </section>
 
@@ -592,7 +592,7 @@
               <button type="button" id="formatAozoraButton" aria-pressed="false">青空文庫記法</button>
               <button type="button" id="formatPixivButton" aria-pressed="false">pixiv</button>
             </div>
-            <textarea class="is-sample" id="outputHtml" readonly aria-label="生成HTML">例: <ruby>新幹線<rt>しんかんせん</rt></ruby>で<ruby>旅行<rt>りょこう</rt></ruby>を<ruby>楽<rt>たの</rt></ruby>しむ。</textarea>
+            <textarea class="is-sample" id="outputHtml" readonly aria-label="生成HTML">例: <ruby>美術館<rt>びじゅつかん</rt></ruby>で<ruby>絵<rt>え</rt></ruby>を<ruby>楽<rt>たの</rt></ruby>しむ。</textarea>
             <div class="actions">
               <button class="button button-secondary" id="copyButton" type="button">コピー</button>
             </div>
@@ -629,10 +629,10 @@
         outputFormat: "html"
       };
 
-      const SAMPLE_TEXT = "新幹線で旅行を楽しむ。";
-      const SAMPLE_FALLBACK_HTML = "<ruby>新幹線<rt>しんかんせん</rt></ruby>で<ruby>旅行<rt>りょこう</rt></ruby>を<ruby>楽<rt>たの</rt></ruby>しむ。";
-      const SAMPLE_FALLBACK_AOZORA = "｜新幹線《しんかんせん》で｜旅行《りょこう》を｜楽《たの》しむ。";
-      const SAMPLE_FALLBACK_PIXIV = "[[rb:新幹線 > しんかんせん]]で[[rb:旅行 > りょこう]]を[[rb:楽 > たの]]しむ。";
+      const SAMPLE_TEXT = "美術館で絵を楽しむ。";
+      const SAMPLE_FALLBACK_HTML = "<ruby>美術館<rt>びじゅつかん</rt></ruby>で<ruby>絵<rt>え</rt></ruby>を<ruby>楽<rt>たの</rt></ruby>しむ。";
+      const SAMPLE_FALLBACK_AOZORA = "｜美術館《びじゅつかん》で｜絵《え》を｜楽《たの》しむ。";
+      const SAMPLE_FALLBACK_PIXIV = "[[rb:美術館 > びじゅつかん]]で[[rb:絵 > え]]を[[rb:楽 > たの]]しむ。";
 
       const elements = {
         sourceText: document.getElementById("sourceText"),
