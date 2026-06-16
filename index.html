@@ -587,6 +587,11 @@
             <h2 class="panel-title" id="output-title">出力</h2>
           </div>
           <div class="panel-body output-row">
+            <div class="segment" role="group" aria-label="出力フォーマット">
+              <button type="button" id="formatHtmlButton" aria-pressed="true">HTML5 ruby</button>
+              <button type="button" id="formatAozoraButton" aria-pressed="false">青空文庫記法</button>
+              <button type="button" id="formatPixivButton" aria-pressed="false">pixiv</button>
+            </div>
             <textarea class="is-sample" id="outputHtml" readonly aria-label="生成HTML">例: <ruby>新幹線<rt>しんかんせん</rt></ruby>で<ruby>旅行<rt>りょこう</rt></ruby>を<ruby>楽<rt>たの</rt></ruby>しむ。</textarea>
             <div class="actions">
               <button class="button button-secondary" id="copyButton" type="button">コピー</button>
@@ -607,7 +612,7 @@
       </main>
 
       <footer class="footer">
-        <span>HTML5 ruby タグ形式のふりがなを生成します。</span>
+        <span>HTML5 ruby / 青空文庫記法 / pixiv 形式のふりがなを生成します。</span>
         <span><a href="../privacy/">プライバシーポリシー</a></span>
       </footer>
     </div>
@@ -620,11 +625,14 @@
         tokenizer: null,
         tokens: [],
         mode: "group",
-        kanjiYomi: null
+        kanjiYomi: null,
+        outputFormat: "html"
       };
 
       const SAMPLE_TEXT = "新幹線で旅行を楽しむ。";
       const SAMPLE_FALLBACK_HTML = "<ruby>新幹線<rt>しんかんせん</rt></ruby>で<ruby>旅行<rt>りょこう</rt></ruby>を<ruby>楽<rt>たの</rt></ruby>しむ。";
+      const SAMPLE_FALLBACK_AOZORA = "｜新幹線《しんかんせん》で｜旅行《りょこう》を｜楽《たの》しむ。";
+      const SAMPLE_FALLBACK_PIXIV = "[[rb:新幹線 > しんかんせん]]で[[rb:旅行 > りょこう]]を[[rb:楽 > たの]]しむ。";
 
       const elements = {
         sourceText: document.getElementById("sourceText"),
@@ -634,6 +642,9 @@
         monoModeButton: document.getElementById("monoModeButton"),
         groupModeButton: document.getElementById("groupModeButton"),
         wholeModeButton: document.getElementById("wholeModeButton"),
+        formatHtmlButton: document.getElementById("formatHtmlButton"),
+        formatAozoraButton: document.getElementById("formatAozoraButton"),
+        formatPixivButton: document.getElementById("formatPixivButton"),
         preview: document.getElementById("preview"),
         outputHtml: document.getElementById("outputHtml"),
         copyButton: document.getElementById("copyButton"),
@@ -787,6 +798,21 @@
             return escapeHtml(run.text);
           })
           .join("");
+      }
+
+      function buildSplitSegments(surface, reading) {
+        const alignedRuns = getAlignedRuns(surface, reading);
+
+        if (!alignedRuns) {
+          return null;
+        }
+
+        return alignedRuns.map((run) => {
+          if (run.type === "kanji") {
+            return { ruby: true, base: run.text, reading: run.reading };
+          }
+          return { ruby: false, text: run.text };
+        });
       }
 
       const rendakuMap = {
@@ -966,6 +992,41 @@
           .join("");
       }
 
+      function buildMonoSegments(token) {
+        const charReadings = token.charReadings || {};
+        const alignedRuns = getAlignedRuns(token.surface, token.reading);
+
+        if (!alignedRuns) {
+          return token.reading
+            ? [{ ruby: true, base: token.surface, reading: token.reading }]
+            : [{ ruby: false, text: token.surface }];
+        }
+
+        let charIndex = 0;
+
+        return alignedRuns.flatMap((run) => {
+          const chars = Array.from(run.text);
+
+          if (run.type !== "kanji") {
+            charIndex += chars.length;
+            return [{ ruby: false, text: run.text }];
+          }
+
+          const startIndex = charIndex;
+          charIndex += chars.length;
+
+          if (chars.every((char, offset) => charReadings[startIndex + offset])) {
+            return chars.map((char, offset) => ({
+              ruby: true,
+              base: char,
+              reading: charReadings[startIndex + offset]
+            }));
+          }
+
+          return [{ ruby: true, base: run.text, reading: run.reading }];
+        });
+      }
+
       function tokenToHtml(token) {
         if (!token.hasKanji || token.style === "off") {
           return escapeHtml(token.surface);
@@ -987,12 +1048,86 @@
           `<ruby>${escapeHtml(token.surface)}<rt>${escapeHtml(token.reading)}</rt></ruby>`;
       }
 
+      function tokenToSegments(token) {
+        if (!token.hasKanji || token.style === "off") {
+          return [{ ruby: false, text: token.surface }];
+        }
+
+        if (token.style === "mono") {
+          return buildMonoSegments(token);
+        }
+
+        if (!token.reading) {
+          return [{ ruby: false, text: token.surface }];
+        }
+
+        if (token.style === "whole") {
+          return [{ ruby: true, base: token.surface, reading: token.reading }];
+        }
+
+        return buildSplitSegments(token.surface, token.reading) || [
+          { ruby: true, base: token.surface, reading: token.reading }
+        ];
+      }
+
+      function formatSegmentsHtml(segs) {
+        return segs
+          .map((seg) => {
+            if (seg.ruby) {
+              return `<ruby>${escapeHtml(seg.base)}<rt>${escapeHtml(seg.reading)}</rt></ruby>`;
+            }
+            return escapeHtml(seg.text);
+          })
+          .join("");
+      }
+
+      function formatSegmentsAozora(segs) {
+        return segs
+          .map((seg) => {
+            if (seg.ruby) {
+              return `｜${seg.base}《${seg.reading}》`;
+            }
+            return seg.text;
+          })
+          .join("");
+      }
+
+      function formatSegmentsPixiv(segs) {
+        return segs
+          .map((seg) => {
+            if (seg.ruby) {
+              return `[[rb:${seg.base} > ${seg.reading}]]`;
+            }
+            return seg.text;
+          })
+          .join("");
+      }
+
+      function serializeTokens(tokens, format) {
+        return tokens
+          .map((token) => {
+            const segs = tokenToSegments(token);
+
+            if (format === "aozora") {
+              return formatSegmentsAozora(segs);
+            }
+
+            if (format === "pixiv") {
+              return formatSegmentsPixiv(segs);
+            }
+
+            return formatSegmentsHtml(segs);
+          })
+          .join("");
+      }
+
       function updateOutput() {
-        const html = state.tokens.map(tokenToHtml).join("");
+        const html = serializeTokens(state.tokens, "html");
+        const output = serializeTokens(state.tokens, state.outputFormat);
         elements.preview.classList.remove("is-sample");
         elements.outputHtml.classList.remove("is-sample");
         elements.preview.innerHTML = html;
-        elements.outputHtml.value = html;
+        elements.outputHtml.value = output;
         resizeTextarea(elements.outputHtml);
       }
 
@@ -1005,17 +1140,33 @@
           return SAMPLE_FALLBACK_HTML;
         }
 
-        return tokenizePreservingWhitespace(SAMPLE_TEXT).map(tokenToHtml).join("");
+        return serializeTokens(tokenizePreservingWhitespace(SAMPLE_TEXT), "html");
+      }
+
+      function buildSampleOutput(format) {
+        if (!state.tokenizer) {
+          if (format === "aozora") {
+            return SAMPLE_FALLBACK_AOZORA;
+          }
+
+          if (format === "pixiv") {
+            return SAMPLE_FALLBACK_PIXIV;
+          }
+
+          return SAMPLE_FALLBACK_HTML;
+        }
+
+        return serializeTokens(tokenizePreservingWhitespace(SAMPLE_TEXT), format);
       }
 
       function updateSampleOutput() {
         const html = buildSampleHtml();
-        const sampleHtml = `例: ${html}`;
+        const output = buildSampleOutput(state.outputFormat);
 
         elements.preview.classList.add("is-sample");
         elements.outputHtml.classList.add("is-sample");
-        elements.preview.innerHTML = sampleHtml;
-        elements.outputHtml.value = sampleHtml;
+        elements.preview.innerHTML = `例: ${html}`;
+        elements.outputHtml.value = `例: ${output}`;
         resizeTextarea(elements.outputHtml);
       }
 
@@ -1229,6 +1380,20 @@
         updateOutput();
       }
 
+      function setFormat(format) {
+        state.outputFormat = format;
+        elements.formatHtmlButton.setAttribute("aria-pressed", String(format === "html"));
+        elements.formatAozoraButton.setAttribute("aria-pressed", String(format === "aozora"));
+        elements.formatPixivButton.setAttribute("aria-pressed", String(format === "pixiv"));
+
+        if (isSampleOutput()) {
+          updateSampleOutput();
+          return;
+        }
+
+        updateOutput();
+      }
+
       function showStatus(message, isError = false) {
         elements.status.textContent = message;
         elements.status.classList.toggle("status-error", isError);
@@ -1310,6 +1475,9 @@
       elements.monoModeButton.addEventListener("click", () => setMode("mono"));
       elements.groupModeButton.addEventListener("click", () => setMode("group"));
       elements.wholeModeButton.addEventListener("click", () => setMode("whole"));
+      elements.formatHtmlButton.addEventListener("click", () => setFormat("html"));
+      elements.formatAozoraButton.addEventListener("click", () => setFormat("aozora"));
+      elements.formatPixivButton.addEventListener("click", () => setFormat("pixiv"));
 
       elements.copyButton.addEventListener("click", async () => {
         if (elements.outputHtml.classList.contains("is-sample")) {
