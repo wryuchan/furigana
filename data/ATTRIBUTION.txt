@@ -1,0 +1,14 @@
+kanji-yomi.json について
+
+このファイル（漢字→読み候補）は、モノルビ生成時に既知のグループ読みを
+漢字1字ごとに分割するための辞書です。以下のデータから音読み・訓読み
+（送り仮名を除いた語幹）を抽出して生成しています。
+
+出典:
+- KANJIDIC2 / KANJIDIC Project, Electronic Dictionary Research and
+  Development Group (EDRDG)
+  https://www.edrdg.org/wiki/index.php/KANJIDIC_Project
+  ライセンス: Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0)
+- 上記を整形した kanji-data (davidluzgouveia/kanji-data) を経由して取得。
+
+KANJIDIC のライセンス条件（表示・継承）に従います。

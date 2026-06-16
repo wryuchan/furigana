@@ -276,7 +276,7 @@
 
       .token-row {
         display: grid;
-        grid-template-columns: minmax(120px, 1fr) minmax(170px, 0.9fr) auto;
+        grid-template-columns: minmax(120px, 0.8fr) minmax(230px, 1.2fr) minmax(220px, auto);
         gap: 12px;
         align-items: center;
         padding: 12px;
@@ -309,38 +309,47 @@
         padding: 0 12px;
       }
 
+      .char-readings {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .char-reading-field {
+        display: grid;
+        grid-template-columns: auto minmax(74px, 1fr);
+        align-items: center;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .char-label {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 34px;
+        min-height: 34px;
+        padding: 0 8px;
+        border-radius: 10px;
+        background: var(--surface-soft);
+        color: var(--text);
+        font-size: 1rem;
+      }
+
+      .char-reading-field input {
+        width: 86px;
+        min-height: 38px;
+        padding: 0 10px;
+      }
+
       .muted-label {
         min-height: 42px;
         display: flex;
         align-items: center;
         color: var(--muted);
         font-size: 0.9rem;
-      }
-
-      .toggle {
-        min-width: 88px;
-        min-height: 42px;
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        background: #faf8f4;
-        color: var(--muted);
-        font-weight: 700;
-        transition:
-          background 170ms ease,
-          border-color 170ms ease,
-          color 170ms ease,
-          transform 170ms ease;
-      }
-
-      .toggle:hover:not(:disabled) {
-        transform: translateY(-1px);
-        border-color: var(--line-strong);
-      }
-
-      .toggle[aria-pressed="true"] {
-        border-color: rgba(46, 90, 172, 0.35);
-        background: var(--accent-soft);
-        color: var(--accent);
       }
 
       .segment {
@@ -369,6 +378,35 @@
       .segment button[aria-pressed="true"] {
         background: var(--accent);
         color: #fff;
+      }
+
+      .style-segment {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4px;
+        padding: 4px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #faf8f4;
+      }
+
+      .style-segment button {
+        min-height: 34px;
+        padding: 0 9px;
+        border: 0;
+        border-radius: 12px;
+        background: transparent;
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 700;
+        transition:
+          background 160ms ease,
+          color 160ms ease;
+      }
+
+      .style-segment button[aria-pressed="true"] {
+        background: var(--accent-soft);
+        color: var(--accent);
       }
 
       .preview {
@@ -515,8 +553,9 @@
           </div>
           <div class="panel-body">
             <div class="segment" role="group" aria-label="ルビ範囲">
-              <button type="button" id="splitModeButton" aria-pressed="true">送り仮名を分ける</button>
-              <button type="button" id="wholeModeButton" aria-pressed="false">語まるごとルビ</button>
+              <button type="button" id="monoModeButton" aria-pressed="false">モノルビ</button>
+              <button type="button" id="groupModeButton" aria-pressed="true">グループルビ</button>
+              <button type="button" id="wholeModeButton" aria-pressed="false">語まるごと</button>
             </div>
           </div>
         </section>
@@ -527,7 +566,7 @@
             <div class="status" id="status">辞書を読み込んでいます</div>
           </div>
           <div class="panel-body">
-            <textarea id="sourceText" placeholder="例: 今日は新しい本を読みました。"></textarea>
+            <textarea id="sourceText" placeholder="例: 新幹線で旅行を楽しむ。"></textarea>
             <div class="actions">
               <button class="button button-primary" id="convertButton" type="button" disabled>変換</button>
             </div>
@@ -539,7 +578,7 @@
             <h2 class="panel-title" id="preview-title">プレビュー</h2>
           </div>
           <div class="panel-body">
-            <div class="preview is-sample" id="preview" aria-live="polite">例: <ruby>今日<rt>きょう</rt></ruby>は<ruby>新<rt>あたら</rt></ruby>しい<ruby>本<rt>ほん</rt></ruby>を<ruby>読<rt>よ</rt></ruby>みました。</div>
+            <div class="preview is-sample" id="preview" aria-live="polite">例: <ruby>新幹線<rt>しんかんせん</rt></ruby>で<ruby>旅行<rt>りょこう</rt></ruby>を<ruby>楽<rt>たの</rt></ruby>しむ。</div>
           </div>
         </section>
 
@@ -548,7 +587,7 @@
             <h2 class="panel-title" id="output-title">出力</h2>
           </div>
           <div class="panel-body output-row">
-            <textarea class="is-sample" id="outputHtml" readonly aria-label="生成HTML">例: <ruby>今日<rt>きょう</rt></ruby>は<ruby>新<rt>あたら</rt></ruby>しい<ruby>本<rt>ほん</rt></ruby>を<ruby>読<rt>よ</rt></ruby>みました。</textarea>
+            <textarea class="is-sample" id="outputHtml" readonly aria-label="生成HTML">例: <ruby>新幹線<rt>しんかんせん</rt></ruby>で<ruby>旅行<rt>りょこう</rt></ruby>を<ruby>楽<rt>たの</rt></ruby>しむ。</textarea>
             <div class="actions">
               <button class="button button-secondary" id="copyButton" type="button">コピー</button>
             </div>
@@ -580,15 +619,20 @@
       const state = {
         tokenizer: null,
         tokens: [],
-        splitOkurigana: true
+        mode: "group",
+        kanjiYomi: null
       };
+
+      const SAMPLE_TEXT = "新幹線で旅行を楽しむ。";
+      const SAMPLE_FALLBACK_HTML = "<ruby>新幹線<rt>しんかんせん</rt></ruby>で<ruby>旅行<rt>りょこう</rt></ruby>を<ruby>楽<rt>たの</rt></ruby>しむ。";
 
       const elements = {
         sourceText: document.getElementById("sourceText"),
         convertButton: document.getElementById("convertButton"),
         status: document.getElementById("status"),
         tokenList: document.getElementById("tokenList"),
-        splitModeButton: document.getElementById("splitModeButton"),
+        monoModeButton: document.getElementById("monoModeButton"),
+        groupModeButton: document.getElementById("groupModeButton"),
         wholeModeButton: document.getElementById("wholeModeButton"),
         preview: document.getElementById("preview"),
         outputHtml: document.getElementById("outputHtml"),
@@ -652,7 +696,7 @@
         return runs;
       }
 
-      function buildSplitRuby(surface, reading) {
+      function getAlignedRuns(surface, reading) {
         const runs = splitSurfaceRuns(surface);
         const kanjiRunIndexes = runs
           .map((run, index) => (run.kind === "kanji" ? index : -1))
@@ -719,21 +763,223 @@
             if (!rt) {
               return null;
             }
-            htmlParts.push(`<ruby>${escapeHtml(run.text)}<rt>${escapeHtml(rt)}</rt></ruby>`);
+            htmlParts.push({ type: "kanji", text: run.text, reading: rt });
           } else {
-            htmlParts.push(escapeHtml(run.text));
+            htmlParts.push({ type: run.kind, text: run.text });
           }
         }
 
-        return htmlParts.join("");
+        return htmlParts;
+      }
+
+      function buildSplitRuby(surface, reading) {
+        const alignedRuns = getAlignedRuns(surface, reading);
+
+        if (!alignedRuns) {
+          return null;
+        }
+
+        return alignedRuns
+          .map((run) => {
+            if (run.type === "kanji") {
+              return `<ruby>${escapeHtml(run.text)}<rt>${escapeHtml(run.reading)}</rt></ruby>`;
+            }
+            return escapeHtml(run.text);
+          })
+          .join("");
+      }
+
+      const rendakuMap = {
+        か: ["が"],
+        き: ["ぎ"],
+        く: ["ぐ"],
+        け: ["げ"],
+        こ: ["ご"],
+        さ: ["ざ"],
+        し: ["じ"],
+        す: ["ず"],
+        せ: ["ぜ"],
+        そ: ["ぞ"],
+        た: ["だ"],
+        ち: ["ぢ"],
+        つ: ["づ"],
+        て: ["で"],
+        と: ["ど"],
+        は: ["ば", "ぱ"],
+        ひ: ["び", "ぴ"],
+        ふ: ["ぶ", "ぷ"],
+        へ: ["べ", "ぺ"],
+        ほ: ["ぼ", "ぽ"]
+      };
+
+      function createSokuonVariant(candidate) {
+        if (!/[くきちつ]$/.test(candidate)) {
+          return "";
+        }
+
+        return `${candidate.slice(0, -1)}っ`;
+      }
+
+      function createRendakuVariants(candidate) {
+        const firstChar = candidate.charAt(0);
+        const replacements = rendakuMap[firstChar] || [];
+
+        return replacements.map((replacement) => `${replacement}${candidate.slice(1)}`);
+      }
+
+      function createReadingMatchVariants(candidate, kanjiIndex, kanjiCount) {
+        const variants = [{ match: candidate, output: candidate }];
+        const sokuon = kanjiIndex < kanjiCount - 1 ? createSokuonVariant(candidate) : "";
+
+        if (sokuon && sokuon !== candidate) {
+          variants.push({ match: sokuon, output: candidate });
+        }
+
+        if (kanjiIndex > 0) {
+          createRendakuVariants(candidate).forEach((rendaku) => {
+            if (rendaku !== candidate) {
+              variants.push({ match: rendaku, output: rendaku });
+            }
+          });
+        }
+
+        return variants;
+      }
+
+      function splitReadingByKanji(kanjiChars, groupReading, kanjiYomiDict) {
+        if (!kanjiYomiDict || !groupReading || !kanjiChars.length) {
+          return null;
+        }
+
+        const memo = new Map();
+
+        function search(kanjiIndex, readingIndex) {
+          const memoKey = `${kanjiIndex}:${readingIndex}`;
+          if (memo.has(memoKey)) {
+            return memo.get(memoKey);
+          }
+
+          if (kanjiIndex === kanjiChars.length) {
+            const result = readingIndex === groupReading.length ? [] : null;
+            memo.set(memoKey, result);
+            return result;
+          }
+
+          const kanji = kanjiChars[kanjiIndex];
+          const candidates = Array.isArray(kanjiYomiDict[kanji]) ? kanjiYomiDict[kanji] : [];
+
+          for (const rawCandidate of candidates) {
+            const candidate = normalizeReading(rawCandidate);
+            if (!candidate) {
+              continue;
+            }
+
+            const variants = createReadingMatchVariants(candidate, kanjiIndex, kanjiChars.length);
+            for (const variant of variants) {
+              if (!groupReading.startsWith(variant.match, readingIndex)) {
+                continue;
+              }
+
+              const nextResult = search(kanjiIndex + 1, readingIndex + variant.match.length);
+              if (nextResult) {
+                const result = [variant.output, ...nextResult];
+                memo.set(memoKey, result);
+                return result;
+              }
+            }
+          }
+
+          memo.set(memoKey, null);
+          return null;
+        }
+
+        return search(0, 0);
+      }
+
+      function createCharReadings(surface, reading) {
+        const charReadings = {};
+        const alignedRuns = getAlignedRuns(surface, reading);
+
+        if (!alignedRuns) {
+          return charReadings;
+        }
+
+        let charIndex = 0;
+        alignedRuns.forEach((run) => {
+          const chars = Array.from(run.text);
+
+          if (run.type === "kanji") {
+            if (chars.length === 1) {
+              charReadings[charIndex] = run.reading || "";
+            } else {
+              const splitReadings = splitReadingByKanji(chars, run.reading, state.kanjiYomi);
+
+              if (splitReadings) {
+                chars.forEach((char, offset) => {
+                  charReadings[charIndex + offset] = splitReadings[offset];
+                });
+              }
+            }
+          }
+
+          charIndex += chars.length;
+        });
+
+        return charReadings;
+      }
+
+      function buildMonoRuby(token) {
+        const charReadings = token.charReadings || {};
+        const alignedRuns = getAlignedRuns(token.surface, token.reading);
+
+        if (!alignedRuns) {
+          return token.reading
+            ? `<ruby>${escapeHtml(token.surface)}<rt>${escapeHtml(token.reading)}</rt></ruby>`
+            : escapeHtml(token.surface);
+        }
+
+        let charIndex = 0;
+
+        return alignedRuns
+          .map((run) => {
+            const chars = Array.from(run.text);
+
+            if (run.type !== "kanji") {
+              charIndex += chars.length;
+              return escapeHtml(run.text);
+            }
+
+            const startIndex = charIndex;
+            charIndex += chars.length;
+
+            if (chars.every((char, offset) => charReadings[startIndex + offset])) {
+              return chars
+                .map((char, offset) => {
+                  const rt = charReadings[startIndex + offset];
+                  return `<ruby>${escapeHtml(char)}<rt>${escapeHtml(rt)}</rt></ruby>`;
+                })
+                .join("");
+            }
+
+            return `<ruby>${escapeHtml(run.text)}<rt>${escapeHtml(run.reading)}</rt></ruby>`;
+          })
+          .join("");
       }
 
       function tokenToHtml(token) {
-        if (!token.hasKanji || !token.rubyEnabled || !token.reading) {
+        if (!token.hasKanji || token.style === "off") {
           return escapeHtml(token.surface);
         }
 
-        if (!state.splitOkurigana) {
+        if (token.style === "mono") {
+          return buildMonoRuby(token);
+        }
+
+        if (!token.reading) {
+          return escapeHtml(token.surface);
+        }
+
+        if (token.style === "whole") {
           return `<ruby>${escapeHtml(token.surface)}<rt>${escapeHtml(token.reading)}</rt></ruby>`;
         }
 
@@ -750,17 +996,90 @@
         resizeTextarea(elements.outputHtml);
       }
 
+      function isSampleOutput() {
+        return elements.outputHtml.classList.contains("is-sample");
+      }
+
+      function buildSampleHtml() {
+        if (!state.tokenizer) {
+          return SAMPLE_FALLBACK_HTML;
+        }
+
+        return tokenizePreservingWhitespace(SAMPLE_TEXT).map(tokenToHtml).join("");
+      }
+
+      function updateSampleOutput() {
+        const html = buildSampleHtml();
+        const sampleHtml = `例: ${html}`;
+
+        elements.preview.classList.add("is-sample");
+        elements.outputHtml.classList.add("is-sample");
+        elements.preview.innerHTML = sampleHtml;
+        elements.outputHtml.value = sampleHtml;
+        resizeTextarea(elements.outputHtml);
+      }
+
       function createToken(sourceToken, id) {
         const surface = sourceToken.surface_form || "";
         const tokenHasKanji = hasKanji(surface);
+        const reading = tokenHasKanji ? normalizeReading(sourceToken.reading) : "";
 
         return {
           id,
           surface,
           hasKanji: tokenHasKanji,
-          reading: tokenHasKanji ? normalizeReading(sourceToken.reading) : "",
-          rubyEnabled: tokenHasKanji
+          reading,
+          charReadings: tokenHasKanji ? createCharReadings(surface, reading) : {},
+          style: tokenHasKanji ? state.mode : "off"
         };
+      }
+
+      function isKanaOnly(value) {
+        return Array.from(value).every(isKana);
+      }
+
+      function shouldMergeBaseToken(token) {
+        const surface = token.surface_form || "";
+
+        return hasKanji(surface) && ["動詞", "形容詞", "助動詞"].includes(token.pos);
+      }
+
+      function shouldMergeTrailingToken(token) {
+        const surface = token.surface_form || "";
+
+        if (!surface || hasKanji(surface) || !isKanaOnly(surface)) {
+          return false;
+        }
+
+        return token.pos === "助動詞" || (token.pos === "助詞" && token.pos_detail_1 === "接続助詞");
+      }
+
+      function mergeReading(baseToken, nextToken) {
+        const baseReading = baseToken.reading && baseToken.reading !== "*" ? baseToken.reading : "";
+        const nextReading = nextToken.reading && nextToken.reading !== "*" ? nextToken.reading : nextToken.surface_form;
+
+        return `${baseReading}${nextReading}`;
+      }
+
+      function mergeInflectionTokens(sourceTokens) {
+        const merged = [];
+
+        for (let index = 0; index < sourceTokens.length; index += 1) {
+          const current = { ...sourceTokens[index] };
+
+          if (shouldMergeBaseToken(current)) {
+            while (sourceTokens[index + 1] && shouldMergeTrailingToken(sourceTokens[index + 1])) {
+              const nextToken = sourceTokens[index + 1];
+              current.surface_form += nextToken.surface_form || "";
+              current.reading = mergeReading(current, nextToken);
+              index += 1;
+            }
+          }
+
+          merged.push(current);
+        }
+
+        return merged;
       }
 
       function tokenizePreservingWhitespace(text) {
@@ -779,13 +1098,14 @@
               surface: piece,
               hasKanji: false,
               reading: "",
-              rubyEnabled: false
+              charReadings: {},
+              style: "off"
             });
             id += 1;
             return;
           }
 
-          state.tokenizer.tokenize(piece).forEach((token) => {
+          mergeInflectionTokens(state.tokenizer.tokenize(piece)).forEach((token) => {
             tokens.push(createToken(token, id));
             id += 1;
           });
@@ -802,22 +1122,81 @@
 
         elements.tokenList.innerHTML = state.tokens
           .map((token) => {
-            const readingControl = token.hasKanji
-              ? `<label class="reading-field">読み<input type="text" data-reading-id="${token.id}" value="${escapeHtml(token.reading)}" placeholder="ひらがなで入力" /></label>`
-              : '<span class="muted-label">ルビ対象外</span>';
-            const disabled = token.hasKanji ? "" : " disabled";
+            if (!token.hasKanji) {
+              return `
+                <div class="token-row">
+                  <span class="token-surface">${escapeHtml(token.surface)}</span>
+                  <span class="muted-label">ルビ対象外</span>
+                  <span></span>
+                </div>
+              `;
+            }
+
+            const kanjiCount = Array.from(token.surface).filter(isKanji).length;
+            const monoDisabled = kanjiCount <= 1 ? " disabled" : "";
+            const styleButtons = [
+              { value: "mono", label: "モノ", disabled: monoDisabled },
+              { value: "group", label: "グループ", disabled: "" },
+              { value: "whole", label: "まるごと", disabled: "" },
+              { value: "off", label: "OFF", disabled: "" }
+            ]
+              .map(
+                (item) => `
+                  <button
+                    type="button"
+                    data-style-id="${token.id}"
+                    data-style-value="${item.value}"
+                    aria-pressed="${token.style === item.value ? "true" : "false"}"${item.disabled}
+                  >${item.label}</button>
+                `
+              )
+              .join("");
+
+            const readingControl =
+              token.style === "mono"
+                ? renderCharReadingControls(token)
+                : token.style === "off"
+                  ? '<span class="muted-label">ルビOFF</span>'
+                  : `<label class="reading-field">読み<input type="text" data-reading-id="${token.id}" value="${escapeHtml(token.reading)}" placeholder="ひらがなで入力" /></label>`;
 
             return `
               <div class="token-row">
                 <span class="token-surface">${escapeHtml(token.surface)}</span>
                 ${readingControl}
-                <button class="toggle" type="button" data-toggle-id="${token.id}" aria-pressed="${token.rubyEnabled ? "true" : "false"}"${disabled}>
-                  ${token.rubyEnabled ? "ON" : "OFF"}
-                </button>
+                <div class="style-segment" role="group" aria-label="${escapeHtml(token.surface)}のルビモード">
+                  ${styleButtons}
+                </div>
               </div>
             `;
           })
           .join("");
+      }
+
+      function renderCharReadingControls(token) {
+        const charReadings = token.charReadings || {};
+        const controls = Array.from(token.surface)
+          .map((char, index) => {
+            if (!isKanji(char)) {
+              return "";
+            }
+
+            return `
+              <label class="char-reading-field">
+                <span class="char-label">${escapeHtml(char)}</span>
+                <input
+                  type="text"
+                  data-charreading-id="${token.id}"
+                  data-charpos="${index}"
+                  value="${escapeHtml(charReadings[index] || "")}"
+                  aria-label="${escapeHtml(char)}の読み"
+                  placeholder="${charReadings[index] ? "" : "グループ表示"}"
+                />
+              </label>
+            `;
+          })
+          .join("");
+
+        return `<div class="char-readings">${controls}</div>`;
       }
 
       function convertText() {
@@ -832,10 +1211,21 @@
         updateOutput();
       }
 
-      function setRangeMode(splitOkurigana) {
-        state.splitOkurigana = splitOkurigana;
-        elements.splitModeButton.setAttribute("aria-pressed", String(splitOkurigana));
-        elements.wholeModeButton.setAttribute("aria-pressed", String(!splitOkurigana));
+      function setMode(mode) {
+        state.mode = mode;
+        elements.monoModeButton.setAttribute("aria-pressed", String(mode === "mono"));
+        elements.groupModeButton.setAttribute("aria-pressed", String(mode === "group"));
+        elements.wholeModeButton.setAttribute("aria-pressed", String(mode === "whole"));
+        state.tokens.forEach((token) => {
+          if (token.hasKanji) {
+            token.style = mode;
+          }
+        });
+        if (isSampleOutput()) {
+          updateSampleOutput();
+          return;
+        }
+        renderEditor();
         updateOutput();
       }
 
@@ -869,33 +1259,57 @@
       elements.convertButton.addEventListener("click", convertText);
 
       elements.tokenList.addEventListener("input", (event) => {
-        const id = Number(event.target.dataset.readingId);
-        const token = state.tokens.find((item) => item.id === id);
+        const readingInput = event.target.closest("[data-reading-id]");
+        const charReadingInput = event.target.closest("[data-charreading-id]");
 
-        if (token) {
-          token.reading = katakanaToHiragana(event.target.value.trim());
-          updateOutput();
+        if (readingInput) {
+          const id = Number(readingInput.dataset.readingId);
+          const token = state.tokens.find((item) => item.id === id);
+
+          if (token) {
+            const normalized = katakanaToHiragana(readingInput.value.trim());
+            token.reading = normalized;
+            readingInput.value = normalized;
+            updateOutput();
+          }
+          return;
+        }
+
+        if (charReadingInput) {
+          const id = Number(charReadingInput.dataset.charreadingId);
+          const charPosition = Number(charReadingInput.dataset.charpos);
+          const token = state.tokens.find((item) => item.id === id);
+
+          if (token) {
+            const normalized = katakanaToHiragana(charReadingInput.value.trim());
+            token.charReadings = token.charReadings || {};
+            token.charReadings[charPosition] = normalized;
+            charReadingInput.value = normalized;
+            updateOutput();
+          }
+          return;
         }
       });
 
       elements.tokenList.addEventListener("click", (event) => {
-        const toggle = event.target.closest("[data-toggle-id]");
-        if (!toggle) {
+        const styleButton = event.target.closest("[data-style-id]");
+        if (!styleButton) {
           return;
         }
 
-        const id = Number(toggle.dataset.toggleId);
+        const id = Number(styleButton.dataset.styleId);
         const token = state.tokens.find((item) => item.id === id);
 
         if (token && token.hasKanji) {
-          token.rubyEnabled = !token.rubyEnabled;
+          token.style = styleButton.dataset.styleValue;
           renderEditor();
           updateOutput();
         }
       });
 
-      elements.splitModeButton.addEventListener("click", () => setRangeMode(true));
-      elements.wholeModeButton.addEventListener("click", () => setRangeMode(false));
+      elements.monoModeButton.addEventListener("click", () => setMode("mono"));
+      elements.groupModeButton.addEventListener("click", () => setMode("group"));
+      elements.wholeModeButton.addEventListener("click", () => setMode("whole"));
 
       elements.copyButton.addEventListener("click", async () => {
         if (elements.outputHtml.classList.contains("is-sample")) {
@@ -928,13 +1342,41 @@
             state.tokenizer = tokenizer;
             elements.convertButton.disabled = false;
             showStatus("辞書の読み込みが完了しました");
+            if (isSampleOutput()) {
+              updateSampleOutput();
+            }
           });
+      }
+
+      function loadKanjiYomi() {
+        const fetchJson = window.fetch
+          ? window.fetch.bind(window)
+          : typeof fetch === "function"
+            ? fetch
+            : null;
+
+        if (!fetchJson) {
+          return Promise.resolve();
+        }
+
+        return fetchJson("./data/kanji-yomi.json")
+          .then((response) => (response.ok ? response.json() : null))
+          .then((data) => {
+            if (data && typeof data === "object" && !Array.isArray(data)) {
+              state.kanjiYomi = data;
+              if (isSampleOutput()) {
+                updateSampleOutput();
+              }
+            }
+          })
+          .catch(() => {});
       }
 
       // レイアウト確定後に初期高さを計算する(確定前だと幅0で誤った高さになるため)
       requestAnimationFrame(() => requestAnimationFrame(resizeAutoGrowTextareas));
       window.addEventListener("load", resizeAutoGrowTextareas);
       window.addEventListener("resize", resizeAutoGrowTextareas);
+      loadKanjiYomi();
       loadDictionary();
     </script>
   </body>
