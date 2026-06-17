@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600;700&family=Shippori+Mincho:wght@600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -25,8 +25,8 @@
         --line-strong: #cfc7ba;
         --text: #1f1d1a;
         --muted: #676156;
-        --accent: #2e5aac;
-        --accent-soft: #eef4ff;
+        --accent: #b4472e;
+        --accent-soft: rgba(180, 71, 46, 0.10);
         --shadow: 0 14px 34px rgba(34, 29, 22, 0.06);
         --radius-lg: 24px;
         --radius-md: 18px;
@@ -42,7 +42,7 @@
         color: var(--text);
         font-family: "IBM Plex Sans JP", sans-serif;
         background:
-          radial-gradient(circle at top right, rgba(46, 90, 172, 0.07), transparent 24%),
+          radial-gradient(circle at top right, rgba(180, 71, 46, 0.08), transparent 24%),
           linear-gradient(180deg, #fbfaf7 0%, var(--bg) 100%);
       }
 
@@ -69,7 +69,7 @@
       button:focus-visible,
       input:focus-visible,
       textarea:focus-visible {
-        outline: 3px solid rgba(46, 90, 172, 0.26);
+        outline: 3px solid rgba(180, 71, 46, 0.30);
         outline-offset: 3px;
       }
 
@@ -89,30 +89,21 @@
         gap: 10px;
       }
 
-      .eyebrow {
-        display: inline-flex;
-        width: fit-content;
-        padding: 6px 10px;
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        background: var(--surface);
-        color: var(--muted);
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
       h1,
       h2,
       p {
         margin: 0;
       }
 
+      h1,
+      .panel-title {
+        font-family: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+      }
+
       h1 {
         font-size: clamp(2rem, 5vw, 3.8rem);
         line-height: 1.08;
-        letter-spacing: -0.03em;
+        letter-spacing: 0.01em;
       }
 
       .lead {
@@ -190,8 +181,8 @@
 
       textarea:focus,
       input[type="text"]:focus {
-        border-color: rgba(46, 90, 172, 0.55);
-        box-shadow: 0 0 0 4px rgba(46, 90, 172, 0.1);
+        border-color: rgba(180, 71, 46, 0.55);
+        box-shadow: 0 0 0 4px rgba(180, 71, 46, 0.12);
       }
 
       .actions {
@@ -250,6 +241,22 @@
         border-radius: 50%;
         background: var(--accent);
         content: "";
+      }
+
+      @keyframes status-pulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.35;
+          transform: scale(0.7);
+        }
+      }
+
+      .status[aria-busy="true"]::before {
+        animation: status-pulse 1100ms ease-in-out infinite;
       }
 
       .status-error {
@@ -352,6 +359,12 @@
         font-size: 0.9rem;
       }
 
+      .panel-hint {
+        margin: 0 0 10px;
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
       .segment {
         display: inline-flex;
         width: fit-content;
@@ -405,8 +418,8 @@
       }
 
       .style-segment button[aria-pressed="true"] {
-        background: var(--accent-soft);
-        color: var(--accent);
+        background: var(--accent);
+        color: #fff;
       }
 
       .preview {
@@ -425,6 +438,11 @@
         color: var(--accent);
         font-size: 0.52em;
         font-weight: 600;
+      }
+
+      .preview rt {
+        font-size: 0.6em;
+        letter-spacing: 0.04em;
       }
 
       .output-row {
@@ -490,6 +508,7 @@
 
         .segment {
           display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
           width: 100%;
           border-radius: 18px;
         }
@@ -530,6 +549,7 @@
         *::after {
           scroll-behavior: auto !important;
           transition: none !important;
+          animation: none !important;
         }
       }
     </style>
@@ -538,7 +558,6 @@
     <div class="page">
       <header class="site-header">
         <div class="title-wrap">
-          <span class="eyebrow">Text Tool</span>
           <h1>ふりがな付与ツール</h1>
           <p class="lead">
             日本語テキストを形態素解析してふりがな（ルビ）付きの文字列を生成します。HTML5 ruby・note（青空文庫記法）・pixiv の3形式に対応し、モノルビ／グループルビ／語まるごとの切り替えや読みをトークンごとに調整できます。
@@ -547,28 +566,29 @@
       </header>
 
       <main>
+        <section class="panel" aria-labelledby="input-title">
+          <div class="panel-head">
+            <h2 class="panel-title" id="input-title">入力</h2>
+            <div class="status" id="status" role="status" aria-live="polite" aria-busy="true">辞書を読み込んでいます</div>
+          </div>
+          <div class="panel-body">
+            <textarea id="sourceText" placeholder="例: 美術館で絵を楽しむ。"></textarea>
+            <div class="actions">
+              <button class="button button-primary" id="convertButton" type="button" disabled>ふりがなを付ける</button>
+            </div>
+          </div>
+        </section>
+
         <section class="panel" aria-labelledby="range-title">
           <div class="panel-head">
             <h2 class="panel-title" id="range-title">ルビ範囲</h2>
           </div>
           <div class="panel-body">
-            <div class="segment" role="group" aria-label="ルビ範囲">
+            <p class="panel-hint" id="range-hint">出力するルビの単位を選びます</p>
+            <div class="segment" role="group" aria-labelledby="range-title" aria-describedby="range-hint">
               <button type="button" id="monoModeButton" aria-pressed="false">モノルビ</button>
               <button type="button" id="groupModeButton" aria-pressed="true">グループルビ</button>
               <button type="button" id="wholeModeButton" aria-pressed="false">語まるごと</button>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel" aria-labelledby="input-title">
-          <div class="panel-head">
-            <h2 class="panel-title" id="input-title">入力</h2>
-            <div class="status" id="status">辞書を読み込んでいます</div>
-          </div>
-          <div class="panel-body">
-            <textarea id="sourceText" placeholder="例: 美術館で絵を楽しむ。"></textarea>
-            <div class="actions">
-              <button class="button button-primary" id="convertButton" type="button" disabled>変換</button>
             </div>
           </div>
         </section>
@@ -584,7 +604,7 @@
 
         <section class="panel" aria-labelledby="output-title">
           <div class="panel-head">
-            <h2 class="panel-title" id="output-title">出力</h2>
+            <h2 class="panel-title" id="output-title">付与結果</h2>
           </div>
           <div class="panel-body output-row">
             <div class="segment" role="group" aria-label="出力フォーマット">
@@ -605,14 +625,14 @@
           </div>
           <div class="panel-body">
             <div class="token-list" id="tokenList">
-              <p class="empty">入力して「変換」を押すと、ここに編集項目が表示されます。</p>
+              <p class="empty">テキストを入力して〔ふりがなを付ける〕を押すと、読みをここで調整できます。</p>
             </div>
           </div>
         </section>
       </main>
 
       <footer class="footer">
-        <span>HTML5 ruby / note（青空文庫記法）/ pixiv 形式のふりがなを生成します。</span>
+        <span>HTML5 ruby・note（青空文庫記法）・pixiv 形式のふりがなを生成します。</span>
         <span><a href="../privacy/">プライバシーポリシー</a></span>
       </footer>
     </div>
@@ -1267,7 +1287,7 @@
 
       function renderEditor() {
         if (!state.tokens.length) {
-          elements.tokenList.innerHTML = '<p class="empty">入力して「変換」を押すと、ここに編集項目が表示されます。</p>';
+          elements.tokenList.innerHTML = '<p class="empty">テキストを入力して〔ふりがなを付ける〕を押すと、読みをここで調整できます。</p>';
           return;
         }
 
@@ -1286,10 +1306,10 @@
             const kanjiCount = Array.from(token.surface).filter(isKanji).length;
             const monoDisabled = kanjiCount <= 1 ? " disabled" : "";
             const styleButtons = [
-              { value: "mono", label: "モノ", disabled: monoDisabled },
+              { value: "mono", label: "モノルビ", disabled: monoDisabled },
               { value: "group", label: "グループ", disabled: "" },
               { value: "whole", label: "まるごと", disabled: "" },
-              { value: "off", label: "OFF", disabled: "" }
+              { value: "off", label: "なし", disabled: "" }
             ]
               .map(
                 (item) => `
@@ -1307,8 +1327,8 @@
               token.style === "mono"
                 ? renderCharReadingControls(token)
                 : token.style === "off"
-                  ? '<span class="muted-label">ルビOFF</span>'
-                  : `<label class="reading-field">読み<input type="text" data-reading-id="${token.id}" value="${escapeHtml(token.reading)}" placeholder="ひらがなで入力" /></label>`;
+                  ? '<span class="muted-label">ルビなし</span>'
+                  : `<label class="reading-field">読み<input type="text" data-reading-id="${token.id}" value="${escapeHtml(token.reading)}" placeholder="ひらがなで入力" aria-label="${escapeHtml(token.surface)}の読み" /></label>`;
 
             return `
               <div class="token-row">
@@ -1350,16 +1370,40 @@
         return `<div class="char-readings">${controls}</div>`;
       }
 
-      function convertText() {
+      const MAX_INPUT_LENGTH = 5000;
+
+      async function convertText() {
         if (!state.tokenizer) {
-          showStatus("辞書の読み込みが完了していません", true);
+          showStatus("辞書を読み込めませんでした。ページを再読み込みしてください。", true);
           return;
         }
+
+        if (!elements.sourceText.value.trim()) {
+          showStatus("テキストを入力してください", true);
+          elements.sourceText.focus();
+          return;
+        }
+
+        if (elements.sourceText.value.length > MAX_INPUT_LENGTH) {
+          showStatus("5000文字以内で入力してください", true);
+          elements.sourceText.focus();
+          return;
+        }
+
+        elements.convertButton.disabled = true;
+        setStatusBusy(true);
+        showStatus("ふりがなを付けています…");
+        // スピナー/メッセージの描画を確定させてから重い同期処理に入る
+        await new Promise(requestAnimationFrame);
 
         resizeTextarea(elements.sourceText);
         state.tokens = tokenizePreservingWhitespace(elements.sourceText.value);
         renderEditor();
         updateOutput();
+
+        setStatusBusy(false);
+        showStatus("ふりがなを付けました");
+        elements.convertButton.disabled = false;
       }
 
       function setMode(mode) {
@@ -1397,6 +1441,10 @@
       function showStatus(message, isError = false) {
         elements.status.textContent = message;
         elements.status.classList.toggle("status-error", isError);
+      }
+
+      function setStatusBusy(isBusy) {
+        elements.status.setAttribute("aria-busy", isBusy ? "true" : "false");
       }
 
       let toastTimer = 0;
@@ -1481,7 +1529,7 @@
 
       elements.copyButton.addEventListener("click", async () => {
         if (elements.outputHtml.classList.contains("is-sample")) {
-          showToast("変換してから利用してください");
+          showToast("先にふりがなを付けてください");
           return;
         }
 
@@ -1489,13 +1537,33 @@
           await navigator.clipboard.writeText(elements.outputHtml.value);
           showToast("コピーしました");
         } catch (error) {
-          showToast("コピーできませんでした");
+          showToast("コピーできませんでした。出力欄を選んで手動でコピーしてください");
         }
       });
 
+      function showDictionaryError() {
+        setStatusBusy(false);
+        showStatus("辞書を読み込めませんでした。ページを再読み込みしてください。", true);
+        showReloadButton();
+      }
+
+      function showReloadButton() {
+        if (document.getElementById("reloadButton")) {
+          return;
+        }
+
+        const reloadButton = document.createElement("button");
+        reloadButton.id = "reloadButton";
+        reloadButton.type = "button";
+        reloadButton.className = "button button-secondary";
+        reloadButton.textContent = "再読み込み";
+        reloadButton.addEventListener("click", () => location.reload());
+        elements.status.insertAdjacentElement("afterend", reloadButton);
+      }
+
       function loadDictionary() {
         if (!window.kuromoji) {
-          showStatus("kuromoji を読み込めませんでした", true);
+          showDictionaryError();
           return;
         }
 
@@ -1503,13 +1571,14 @@
           .builder({ dicPath: "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/" })
           .build((error, tokenizer) => {
             if (error) {
-              showStatus("辞書の読み込みに失敗しました", true);
+              showDictionaryError();
               return;
             }
 
             state.tokenizer = tokenizer;
             elements.convertButton.disabled = false;
-            showStatus("辞書の読み込みが完了しました");
+            setStatusBusy(false);
+            showStatus("辞書を読み込みました");
             if (isSampleOutput()) {
               updateSampleOutput();
             }
