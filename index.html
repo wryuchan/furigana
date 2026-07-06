@@ -494,6 +494,72 @@
         color: var(--text);
       }
 
+      .footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 16px;
+      }
+
+      .guide-body {
+        gap: 10px;
+      }
+
+      .guide-body h3 {
+        margin: 14px 0 0;
+        font-family: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+        font-size: 1.05rem;
+      }
+
+      .guide-body h3:first-child {
+        margin-top: 0;
+      }
+
+      .guide-body p,
+      .guide-body li {
+        line-height: 1.9;
+      }
+
+      .guide-body ul {
+        margin: 0;
+        padding-left: 1.3em;
+      }
+
+      .guide-body li + li {
+        margin-top: 8px;
+      }
+
+      .guide-body code {
+        padding: 1px 6px;
+        border-radius: 6px;
+        background: var(--surface-soft);
+        font-size: 0.86em;
+        overflow-wrap: anywhere;
+      }
+
+      .guide-faq {
+        margin: 0;
+      }
+
+      .guide-faq dt {
+        margin-top: 10px;
+        padding-left: 1.6em;
+        text-indent: -1.6em;
+        font-weight: 600;
+      }
+
+      .guide-faq dt::before {
+        content: "Q. ";
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      .guide-faq dd {
+        margin: 2px 0 0;
+        padding-left: 1.4em;
+        color: var(--muted);
+        line-height: 1.9;
+      }
+
       @media (max-width: 760px) {
         .site-header,
         .panel-head,
@@ -560,7 +626,7 @@
         <div class="title-wrap">
           <h1>ふりがな付与ツール</h1>
           <p class="lead">
-            日本語テキストを形態素解析してふりがな（ルビ）付きの文字列を生成します。HTML5 ruby・note（青空文庫記法）・pixiv の3形式に対応し、モノルビ／グループルビ／語まるごとの切り替えや読みをトークンごとに調整できます。
+            HTML5 ruby・note（青空文庫記法）・pixiv の3形式に対応し、モノルビ／グループルビなどの切り替えや読みをトークンごとに調整できます。
           </p>
         </div>
       </header>
@@ -629,11 +695,77 @@
             </div>
           </div>
         </section>
+
+        <section class="panel" aria-labelledby="guide-title">
+          <div class="panel-head">
+            <h2 class="panel-title" id="guide-title">使い方と解説</h2>
+          </div>
+          <div class="panel-body guide-body">
+            <h3>このツールについて</h3>
+            <p>
+              ふりがな（ルビ）は、漢字の読みを小さな文字で添える表記です。このツールは、入力した日本語テキストを形態素解析して読みを推定し、ルビ付きのテキストを生成します。
+              解析用の辞書もこのサイト内から読み込むため、入力したテキストが外部のサーバーに送信されることはありません。
+            </p>
+
+            <h3>3つの出力形式と使いどころ</h3>
+            <ul>
+              <li>
+                <strong>HTML5 ruby</strong> — <code>&lt;ruby&gt;美術館&lt;rt&gt;びじゅつかん&lt;/rt&gt;&lt;/ruby&gt;</code> の形式です。
+                ブログや自分のWebサイトなど、HTMLを直接書ける場所向けで、主要なブラウザで漢字の上に読みが表示されます。
+              </li>
+              <li>
+                <strong>note（青空文庫記法）</strong> — <code>｜美術館《びじゅつかん》</code> の形式です。
+                note の本文に貼り付けると公開時にルビとして表示されます。青空文庫で使われてきた記法なので、対応するテキストビューアでもそのまま利用できます。
+              </li>
+              <li>
+                <strong>pixiv</strong> — <code>[[rb:美術館 &gt; びじゅつかん]]</code> の形式です。pixiv 小説の本文で使える専用タグで、投稿するとルビとして表示されます。
+              </li>
+            </ul>
+
+            <h3>モノルビ・グループルビ・語まるごとの違い</h3>
+            <ul>
+              <li>
+                <strong>モノルビ</strong> — 漢字1文字ずつに読みを割り当てます
+                （<ruby>美<rt>び</rt></ruby><ruby>術<rt>じゅつ</rt></ruby><ruby>館<rt>かん</rt></ruby>）。
+                文字と読みの対応を厳密に示したい、出版寄りの組版で好まれる方式です。
+              </li>
+              <li>
+                <strong>グループルビ</strong> — 漢字のまとまりごとに読みを付けます
+                （<ruby>美術館<rt>びじゅつかん</rt></ruby>で<ruby>楽<rt>たの</rt></ruby>しむ）。送り仮名はルビの外に出ます。迷ったらこの標準設定がおすすめです。
+              </li>
+              <li>
+                <strong>語まるごと</strong> — 送り仮名も含めた語全体に読みを付けます
+                （<ruby>楽しむ<rt>たのしむ</rt></ruby>）。
+                当て字や熟字訓（<ruby>大人<rt>おとな</rt></ruby>・<ruby>今日<rt>きょう</rt></ruby> など）のように、文字と読みが1対1に対応しない語に向いています。
+              </li>
+            </ul>
+
+            <h3>読みの調整</h3>
+            <p>
+              形態素解析による読みは完全ではなく、人名などの固有名詞や、文脈で読みが変わる語（「行った」など）は誤ることがあります。
+              変換後に「編集」パネルでトークンごとに読みを打ち直したり、ルビの単位を切り替えたり、ルビ自体を外したりできます。修正はプレビューと付与結果へ即時に反映されます。
+            </p>
+
+            <h3>よくある質問</h3>
+            <dl class="guide-faq">
+              <dt>入力したテキストが外部に送信されることはありますか？</dt>
+              <dd>ありません。解析エンジンと辞書はこのサイトから読み込まれ、変換はすべてお使いのブラウザの中で完結します。</dd>
+              <dt>生成したルビ付きテキストは自由に使えますか？</dt>
+              <dd>はい。商用・非商用を問わず自由にお使いいただけます。生成結果に対して当サイトが権利を主張することはありません。</dd>
+              <dt>長い文章でも変換できますか？</dt>
+              <dd>できます。ただし一度に大量のテキストを変換すると解析に時間がかかるため、章や段落ごとに分けて変換するのがおすすめです。</dd>
+            </dl>
+          </div>
+        </section>
       </main>
 
       <footer class="footer">
         <span>HTML5 ruby・note（青空文庫記法）・pixiv 形式のふりがなを生成します。</span>
-        <span><a href="../privacy/">プライバシーポリシー</a></span>
+        <nav class="footer-links" aria-label="サイト内リンク">
+          <a href="../">wataryuu.com トップ</a>
+          <a href="../privacy/">プライバシーポリシー</a>
+          <a href="../about/">運営者情報・お問い合わせ</a>
+        </nav>
       </footer>
     </div>
 
